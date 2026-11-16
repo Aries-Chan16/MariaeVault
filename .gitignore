@@ -1,0 +1,21 @@
+# Python environments and generated files
+.venv/
+.venv_backup/
+__pycache__/
+*.py[cod]
+
+# Local vault data and SQLite files
+AdminVault/
+locker.db
+locker.db-*
+
+# Local secrets and environment configuration
+.env
+.env.*
+!.env.example
+
+# Editor and OS files
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini

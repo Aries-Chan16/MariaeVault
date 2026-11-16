@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mariae Vault · Admin</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='ua-logo.png') }}">
+  <style>
+    :root { color-scheme:light; --ink:#19263c; --muted:#75839a; --line:#e7ecf3; --blue:#4d6ff5; --wash:#f6f8fc; --red:#bd4055; }
+    :root[data-theme="dark"] { color-scheme:dark; --ink:#e7edf8; --muted:#9aa9bf; --line:#303d52; --blue:#8096ff; --wash:#111927; --red:#ff8797; }
+    * { box-sizing:border-box; } body { margin:0; background:radial-gradient(ellipse at 45% -20%,#e8edff 0,transparent 45%),var(--wash); color:var(--ink); font:14px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
+    button,input,select { font:inherit; } button { cursor:pointer; }
+    .shell { width:min(100% - 40px,1240px); margin:auto; padding:22px 0 54px; }
+    .topbar { display:flex; align-items:center; gap:12px; margin-bottom:34px; }
+    .brand-logo { width:44px; height:44px; object-fit:contain; } .brand-name { font-size:17px; font-weight:730; }
+    .admin-label { color:var(--muted); font-size:12px; margin-left:4px; }
+    .top-actions { margin-left:auto; display:flex; align-items:center; gap:10px; }
+    .theme-toggle { display:inline-flex; align-items:center; gap:9px; border:0; border-radius:999px; padding:6px 8px; background:transparent; color:var(--ink); font-size:13px; font-weight:600; transition:background-color .2s,color .2s; }
+    .theme-toggle:hover { background:#edf1fa; }
+    .theme-toggle:focus-visible { outline:3px solid #4d6ff566; outline-offset:3px; }
+    .theme-track { position:relative; display:block; width:44px; height:25px; flex:0 0 auto; border-radius:99px; background:#cbd4e3; transition:background .28s ease,box-shadow .2s ease; }
+    .theme-knob { position:absolute; top:3px; left:3px; display:block; width:19px; height:19px; border-radius:50%; background:white; box-shadow:0 2px 5px #16233a35; transition:transform .32s cubic-bezier(.2,.8,.2,1); }
+    .theme-state-icon { display:inline-block; width:20px; text-align:center; color:var(--blue); font-size:19px; line-height:1; transition:transform .28s ease,color .28s ease; }
+    :root[data-theme="dark"] .theme-track { background:#586ed0; }
+    :root[data-theme="dark"] .theme-knob { transform:translateX(21px); }
+    :root[data-theme="dark"] body { background:radial-gradient(ellipse at 45% -20%,#25314d 0,transparent 45%),var(--wash); }
+    :root[data-theme="dark"] .panel, :root[data-theme="dark"] .metric, :root[data-theme="dark"] .backup-card, :root[data-theme="dark"] dialog { background:#1b2637; border-color:var(--line); color:var(--ink); }
+    :root[data-theme="dark"] .theme-toggle:hover { background:#202c3f; }
+    :root[data-theme="dark"] .button, :root[data-theme="dark"] input, :root[data-theme="dark"] select { background:#202c3f; border-color:#39475e; color:var(--ink); }
+    :root[data-theme="dark"] th { background:#202c3f; }
+    :root[data-theme="dark"] td, :root[data-theme="dark"] th { border-color:#303d52; }
+    :root[data-theme="dark"] .security { background:#302b25; border-color:#5d4934; }
+    :root[data-theme="dark"] .security-row { border-color:#514334; }
+    :root[data-theme="dark"] .recovery-code { background:#121c2b; }
+    body, .panel, .metric, .backup-card, dialog, .button, input, select { transition:background-color .28s ease,color .28s ease,border-color .28s ease; }
+    .panel { border:1px solid var(--line); border-radius:19px; background:white; box-shadow:0 18px 55px #20375b0b; }
+    .header { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:22px; }
+    h1 { margin:0; font-size:27px; letter-spacing:-.04em; } h2 { margin:0; font-size:17px; }
+    .muted { color:var(--muted); } .small { font-size:12px; }
+    .button { display:inline-block; border:1px solid #e1e7f0; border-radius:9px; padding:8px 12px; background:#fff; color:var(--ink); text-decoration:none; transition:.15s; }
+    .button:hover { background:#f8faff; border-color:#cbd6e8; }
+    .button.primary { background:var(--blue); border-color:var(--blue); color:white; font-weight:650; }
+    .button.primary:hover { background:#3d5de0; }
+    .button.danger { background:#fff7f8; border-color:#f0d6db; color:var(--red); }
+    .button.danger:hover { background:#ffedef; }
+    :root[data-theme="dark"] .button.danger { background:#4b1d2a; border-color:#a63d52; color:#ff9aa8; }
+    :root[data-theme="dark"] .button.danger:hover { background:#642432; border-color:#d15b70; color:#ffd4da; }
+    :root[data-theme="dark"] .top-actions .button.danger { background:#b33b50; border-color:#c84b60; color:white; }
+    :root[data-theme="dark"] .top-actions .button.danger:hover { background:#c8495f; border-color:#df6074; color:white; }
+    .nav { display:flex; gap:5px; border-bottom:1px solid var(--line); margin-bottom:20px; }
+    .nav button { border:0; border-bottom:2px solid transparent; padding:11px 13px; background:none; color:var(--muted); }
+    .nav button.active { border-color:var(--blue); color:var(--blue); font-weight:650; }
+    .content { padding:25px; }
+    .tab-panel.hidden { display:none; }
+    .metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:13px; margin-bottom:22px; }
+    .metric { padding:17px; border:1px solid var(--line); border-radius:13px; background:linear-gradient(135deg,#fff,#fbfcff); }
+    .metric-label { color:var(--muted); font-size:12px; } .metric-value { margin-top:5px; font-size:23px; font-weight:720; letter-spacing:-.03em; }
+    .section-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:24px 0 12px; }
+    .filter-controls { display:flex; align-items:center; justify-content:flex-end; flex-wrap:nowrap; gap:9px; min-width:0; }
+    .filter-select { height:42px; min-width:0; border:1px solid #dfe6f0; border-radius:10px; padding:0 34px 0 12px; background:white; color:var(--ink); font-size:13px; }
+    #userStatusFilter { width:145px; }
+    #userSortFilter { width:238px; }
+    #activityCategoryFilter { width:185px; }
+    .search-wrap { position:relative; display:block; width:245px; flex:0 1 245px; }
+    .search-wrap svg { position:absolute; top:50%; left:12px; width:16px; height:16px; transform:translateY(-50%); color:var(--muted); pointer-events:none; }
+    .search { width:100%; height:42px; border:1px solid #dfe6f0; border-radius:10px; padding:0 12px 0 36px; background:white; color:var(--ink); font-size:13px; outline:none; }
+    .search::placeholder { color:#8a97aa; }
+    .filter-controls .button { height:42px; white-space:nowrap; }
+    .search:focus,input:focus,select:focus { border-color:var(--blue); box-shadow:0 0 0 3px #4d6ff51a; outline:none; }
+    .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:12px; }
+    table { width:100%; border-collapse:collapse; min-width:850px; } th,td { padding:11px 12px; text-align:left; border-bottom:1px solid #edf0f5; vertical-align:middle; }
+    th { color:var(--muted); background:#fafbfe; font-size:11px; font-weight:650; text-transform:uppercase; letter-spacing:.045em; }
+    tr:last-child td { border-bottom:0; }
+    .user-name { font-weight:650; } .email { color:var(--muted); font-size:12px; }
+    .badge { display:inline-block; border-radius:99px; padding:3px 8px; background:#edf7f0; color:#287b4b; font-size:11px; font-weight:650; text-transform:capitalize; }
+    .badge.suspended { background:#fff5e3; color:#95651b; } .badge.deactivated { background:#f2f3f6; color:#687386; }
+    .account-controls { display:grid; gap:9px; min-width:340px; }
+    .account-tools, .account-status-controls { display:flex; align-items:flex-end; flex-wrap:wrap; gap:7px; }
+    .account-tools .button { padding:6px 10px; font-size:12px; }
+    .status-field, .suspension-duration { display:grid; gap:4px; color:var(--muted); font-size:11px; font-weight:650; }
+    .quota-input { width:88px; padding:6px 7px; border:1px solid #dfe6f0; border-radius:7px; }
+    .status-select { min-width:142px; padding:7px 28px 7px 9px; border:1px solid #dfe6f0; border-radius:8px; background:white; color:var(--ink); font-size:12px; }
+    .suspension-duration { grid-template-columns:auto 74px auto; align-items:center; gap:6px; }
+    .suspension-days { width:74px; padding:7px 8px; border:1px solid #dfe6f0; border-radius:8px; font-size:12px; }
+    .activity-list { display:grid; gap:8px; }
+    .activity-pagination { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:12px; }
+    .pagination-controls { display:flex; align-items:center; gap:8px; }
+    .event { display:grid; grid-template-columns:160px 150px minmax(130px,1fr) minmax(180px,2fr) 130px; gap:12px; padding:11px 13px; border:1px solid var(--line); border-radius:10px; align-items:center; }
+    .event-head { color:var(--muted); font-size:11px; font-weight:650; text-transform:uppercase; }
+    .security { margin:0 0 18px; padding:15px; border:1px solid #f2d9bc; border-radius:12px; background:#fffbf5; }
+    .security-row { display:flex; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px solid #f4e9dc; }
+    .security-row:last-child { border-bottom:0; }
+    .backup-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .backup-card { padding:19px; border:1px solid var(--line); border-radius:13px; }
+    .backup-card p { min-height:40px; color:var(--muted); font-size:13px; }
+    .folder-browser-nav { display:flex; align-items:center; gap:12px; margin:8px 0 12px; }
+    .folder-breadcrumbs { display:flex; align-items:center; flex-wrap:wrap; gap:7px; min-width:0; color:var(--muted); }
+    .folder-crumb { border:0; padding:4px 0; background:none; color:var(--muted); }
+    .folder-crumb:hover, .folder-crumb.current { color:var(--ink); font-weight:650; }
+    .folder-crumb-sep { color:#9aa7ba; }
+    .folder-list { display:grid; gap:7px; max-height:55vh; overflow:auto; padding:2px; }
+    .folder-entry { display:flex; align-items:center; gap:11px; width:100%; border:1px solid var(--line); border-radius:10px; padding:10px 12px; background:white; color:var(--ink); text-align:left; }
+    .folder-entry:hover { border-color:#b9c8e5; background:#f8faff; }
+    .folder-entry-icon { color:#c88b19; font-size:18px; }
+    .folder-entry-copy { display:grid; min-width:0; }
+    .folder-entry-name { overflow:hidden; font-weight:650; text-overflow:ellipsis; white-space:nowrap; }
+    .folder-entry-meta, .folder-file-meta { color:var(--muted); font-size:12px; }
+    .folder-file { display:flex; justify-content:space-between; gap:12px; padding:9px 12px; border:1px solid var(--line); border-radius:10px; }
+    .folder-empty { padding:20px 12px; color:var(--muted); text-align:center; }
+    :root[data-theme="dark"] .folder-entry { background:#202c3f; color:var(--ink); }
+    :root[data-theme="dark"] .folder-entry:hover { border-color:#6175ac; background:#25344d; }
+    :root[data-theme="dark"] .folder-file { border-color:var(--line); }
+    .storage-bar { width:110px; height:6px; border-radius:99px; background:#edf0f5; overflow:hidden; margin-top:5px; }
+    .storage-bar span { display:block; height:100%; background:#607bf2; }
+    .status-message { min-height:20px; margin:12px 0 0; color:var(--muted); font-size:13px; }
+    .status-message.error { color:var(--red); }
+    dialog { width:min(100% - 30px,520px); max-height:85vh; overflow:auto; border:1px solid var(--line); border-radius:17px; padding:0; box-shadow:0 24px 80px #14213d30; color:var(--ink); }
+    dialog::backdrop { background:#17243b66; backdrop-filter:blur(3px); }
+    .dialog-body { padding:23px; } .dialog-body h2 { margin-bottom:7px; } .dialog-copy { margin:0 0 16px; color:var(--muted); font-size:13px; }
+    .dialog-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:18px; }
+    .recovery-code { display:block; margin:12px 0; padding:12px; border-radius:9px; background:#f4f6fa; word-break:break-all; font-family:ui-monospace,monospace; }
+    .hidden { display:none!important; }
+    @media(max-width:900px) { .section-head{align-items:flex-start;flex-direction:column}.filter-controls{width:100%;justify-content:flex-start}.search-wrap{flex:1 1 200px;width:auto} }
+    @media(max-width:760px) { .content{padding:17px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.backup-grid{grid-template-columns:1fr}.event{grid-template-columns:1fr 1fr}.event-head{display:none}.header{align-items:flex-start;flex-direction:column}.section-head{align-items:flex-start;flex-direction:column}.filter-controls{width:100%;justify-content:flex-start;flex-wrap:wrap}.search-wrap{width:100%;flex:1 1 100%}.filter-select{flex:1 1 140px;width:auto!important}.filter-controls .button{flex:0 0 auto}.top-actions{margin-left:0}.nav{overflow:auto}.nav button{white-space:nowrap} }
+  </style>
+</head>
+<body>
+<main class="shell">
+  <header class="topbar"><img class="brand-logo" src="{{ url_for('static', filename='ua-logo.png') }}" alt="University of the Assumption logo"><div><div class="brand-name">Mariae Vault</div><div class="admin-label">Administrator console</div></div><div class="top-actions"><span class="muted small">Signed in as Admin</span><button class="theme-toggle" id="themeToggle" type="button" aria-label="Light mode" aria-pressed="false" title="Light mode"><span class="theme-track" aria-hidden="true"><span class="theme-knob"></span></span><span class="theme-state-icon" aria-hidden="true">☀</span></button><button class="button danger" id="logout">Log out</button></div></header>
+  <section class="panel content">
+    <div class="header"><div><h1>Admin dashboard</h1><div class="muted small">Manage accounts, storage, security, and system recovery.</div></div></div>
+    <nav class="nav" aria-label="Admin sections"><button class="active" data-tab="overview">Overview</button><button data-tab="accounts">User accounts</button><button data-tab="activity">Activity &amp; security</button><button data-tab="backup">Backup &amp; restore</button></nav>
+    <div id="overview" class="tab-panel">
+      <div class="metrics"><div class="metric"><div class="metric-label">Registered users</div><div class="metric-value" id="metricUsers">—</div></div><div class="metric"><div class="metric-label">Active users</div><div class="metric-value" id="metricActive">—</div></div><div class="metric"><div class="metric-label">Storage used</div><div class="metric-value" id="metricUsed">—</div></div><div class="metric"><div class="metric-label">User quota total</div><div class="metric-value" id="metricQuota">—</div></div></div>
+      <div class="section-head"><h2>Recent system activity</h2><button class="button" data-goto="activity">View all activity</button></div><div id="recentEvents" class="activity-list"></div>
+    </div>
+    <div id="accounts" class="tab-panel hidden">
+      <div class="section-head"><h2>User accounts</h2><div class="filter-controls"><label class="search-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><input class="search" id="searchUsers" type="search" placeholder="Search username" aria-label="Search user accounts" autocomplete="off"></label><select class="filter-select" id="userStatusFilter" aria-label="Filter accounts by status"><option value="all">All statuses</option><option value="active">Active</option><option value="suspended">Suspended</option><option value="deactivated">Deactivated</option></select><select class="filter-select" id="userSortFilter" aria-label="Sort user accounts"><option value="username-asc">Username (A–Z)</option><option value="storage-asc">Storage: Lowest first</option><option value="storage-desc">Storage: Highest first</option><option value="uid-asc">UID: Lowest first</option><option value="uid-desc">UID: Highest first</option><option value="created-asc">Created: Oldest first</option><option value="created-desc">Created: Newest first</option></select></div></div>
+      <div class="table-wrap"><table><thead><tr><th>UID</th><th>User</th><th>Status</th><th>Storage</th><th>Quota (MB)</th><th>Created</th><th>Actions</th></tr></thead><tbody id="userRows"></tbody></table></div>
+      <div class="muted small" style="margin-top:9px">Folder browsing shows names and file metadata only. It does not expose decrypted file contents.</div>
+      <div class="status-message" id="accountMessage" role="status"></div>
+    </div>
+    <div id="activity" class="tab-panel hidden">
+      <section id="securityBox" class="security hidden"><h2>Repeated failed login attempts</h2><p class="muted small">Five or more failed attempts from one address in the last 15 minutes.</p><div id="securityRows"></div></section>
+      <div class="section-head"><h2>System activity log</h2><div class="filter-controls"><label class="search-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><input class="search" id="searchActivity" type="search" placeholder="Search activity" aria-label="Search activity log" autocomplete="off"></label><select class="filter-select" id="activityCategoryFilter" aria-label="Filter activity category"><option value="all">All activity</option><option value="security">Sign-in &amp; security</option><option value="accounts">Account changes</option><option value="files">Files &amp; folders</option><option value="system">System &amp; backup</option></select><button class="button" id="refreshActivity">Refresh</button></div></div><div id="activityRows" class="activity-list"></div>
+      <div class="activity-pagination"><span class="muted small" id="activityPageInfo"></span><div class="pagination-controls"><button class="button" id="activityPrevious" type="button">Previous</button><button class="button" id="activityNext" type="button">Next</button></div></div>
+    </div>
+    <div id="backup" class="tab-panel hidden">
+      <div class="backup-grid">
+        <article class="backup-card"><h2>Create a backup</h2><p>Download a protected archive containing the account database and encrypted user files. Keep it in a secure location.</p><a class="button primary" id="downloadBackup" href="/api/admin/backup">Download backup</a></article>
+        <article class="backup-card"><h2>Restore a backup</h2><p>Restore replaces the current database and all account folders with the selected archive.</p><label class="small" for="backupFile">Backup archive (.zip)</label><input id="backupFile" type="file" accept=".zip,application/zip"><div style="margin-top:12px"><button class="button danger" id="restoreButton" type="button">Restore system</button></div></article>
+      </div><div class="status-message" id="backupMessage" role="status"></div>
+    </div>
+  </section>
+</main>
+<dialog id="foldersDialog"><div class="dialog-body"><h2 id="foldersTitle">User folders</h2><div class="folder-browser-nav"><button class="button hidden" id="folderBack" type="button">← Back</button><nav class="folder-breadcrumbs" id="folderBreadcrumbs" aria-label="Folder path"></nav></div><div id="folderTree" class="folder-list" aria-live="polite"></div><div class="dialog-actions"><button class="button" data-close="foldersDialog">Close</button></div></div></dialog>
+<dialog id="recoveryDialog"><div class="dialog-body"><h2>Recovery code issued</h2><p class="dialog-copy">Share this code with the user through an approved channel. It expires in one hour and can only be used once.</p><code id="recoveryCode" class="recovery-code"></code><div class="dialog-actions"><button class="button" id="copyRecovery">Copy code</button><button class="button primary" data-close="recoveryDialog">Done</button></div></div></dialog>
+<dialog id="confirmDialog"><div class="dialog-body"><h2 id="confirmTitle">Confirm action</h2><p id="confirmCopy" class="dialog-copy"></p><div class="dialog-actions"><button class="button" id="confirmCancel">Cancel</button><button class="button danger" id="confirmAccept">Confirm</button></div></div></dialog>
+<script>
+  const $ = id => document.getElementById(id);
+  const themeToggle = $('themeToggle');
+  function setTheme(theme) { document.documentElement.dataset.theme=theme; const dark=theme==='dark'; themeToggle.setAttribute('aria-pressed',String(dark)); themeToggle.setAttribute('aria-label',dark?'Dark mode':'Light mode'); themeToggle.title=dark?'Dark mode':'Light mode'; themeToggle.querySelector('.theme-state-icon').textContent=dark?'☾':'☀'; }
+  setTheme(localStorage.getItem('mariae-vault-theme')||'light');
+  themeToggle.addEventListener('click',()=>{const theme=document.documentElement.dataset.theme==='dark'?'light':'dark';localStorage.setItem('mariae-vault-theme',theme);setTheme(theme);});
+  let selectedUser = null;
+  let activityEvents = [];
+  let securityEvents = [];
+  let activityPage = 1;
+  const tabs = [...document.querySelectorAll('[data-tab]')];
+  tabs.forEach(button => button.onclick = () => activateTab(button.dataset.tab));
+  document.querySelectorAll('[data-goto]').forEach(button => button.onclick=()=>activateTab(button.dataset.goto));
+  document.querySelectorAll('[data-close]').forEach(button => button.onclick=()=>$(button.dataset.close).close());
+  function activateTab(name) { document.querySelectorAll('.tab-panel').forEach(panel=>panel.classList.toggle('hidden',panel.id!==name)); tabs.forEach(button=>button.classList.toggle('active',button.dataset.tab===name)); if(name==='activity')loadActivity(); if(name==='accounts')loadUsers(); }
+  async function api(path,options={}) { const response=await fetch(path,{...options,cache:'no-store',credentials:'same-origin'}); if(!response.ok){const body=await response.json().catch(()=>({error:`Server returned HTTP ${response.status}; check the Mariae Vault server console.`}));throw new Error(body.error||`Request failed (HTTP ${response.status}).`);} return response; }
+  function fmt(bytes) { if(bytes<1_000_000)return `${Math.ceil(bytes/1000)} KB`; return `${(bytes/1_000_000).toFixed(1)} MB`; }
+  function fmtDateTime(value) { if(!value)return '—';const date=new Date(String(value).replace(' ','T')+'Z');if(Number.isNaN(date.getTime()))return value;return date.toLocaleString('en-PH',{timeZone:'Asia/Manila',dateStyle:'medium',timeStyle:'short',hour12:true}); }
+  function button(label,cls,handler) { const node=document.createElement('button');node.type='button';node.className='button '+(cls||'');node.textContent=label;node.onclick=handler;return node; }
+  async function confirmAction(title,copy,accept='Confirm') { $('confirmTitle').textContent=title;$('confirmCopy').textContent=copy;$('confirmAccept').textContent=accept;$('confirmDialog').showModal();return new Promise(resolve=>{const done=value=>{$('confirmDialog').close();$('confirmAccept').removeEventListener('click',yes);$('confirmCancel').removeEventListener('click',no);$('confirmDialog').removeEventListener('cancel',dismiss);resolve(value);};const yes=()=>done(true),no=()=>done(false),dismiss=()=>done(false);$('confirmAccept').addEventListener('click',yes);$('confirmCancel').addEventListener('click',no);$('confirmDialog').addEventListener('cancel',dismiss);}); }
+  async function loadSummary() { const s=await(await api('/api/admin/summary')).json();$('metricUsers').textContent=s.users;$('metricActive').textContent=s.active_users;$('metricUsed').textContent=fmt(s.used_bytes);$('metricQuota').textContent=fmt(s.quota_bytes);renderEvents($('recentEvents'),s.recent); }
+  let searchTimer;
+  $('searchUsers').oninput=()=>{clearTimeout(searchTimer);searchTimer=setTimeout(loadUsers,180);};
+  $('userStatusFilter').onchange=loadUsers;
+  $('userSortFilter').onchange=loadUsers;
+  async function loadUsers() { try { const q=encodeURIComponent($('searchUsers').value);const data=await(await api('/api/admin/users?q='+q)).json();const root=$('userRows');root.replaceChildren();const statusFilter=$('userStatusFilter').value;const users=data.users.filter(user=>statusFilter==='all'||user.status===statusFilter);const sort=$('userSortFilter').value;const sortFields={'username':user=>String(user.username||'').toLocaleLowerCase(),'storage':user=>Number(user.used_bytes)||0,'uid':user=>Number(user.id)||0,'created':user=>Date.parse(user.created_at)||0};const [sortKey,direction]=sort.split('-');const field=sortFields[sortKey]||sortFields.username;users.sort((a,b)=>{const result=field(a)<field(b)?-1:field(a)>field(b)?1:String(a.username||'').localeCompare(String(b.username||''));return direction==='desc'?-result:result;});for(const user of users){const row=document.createElement('tr');
+      const uid=document.createElement('td');uid.textContent=user.id;
+      const who=document.createElement('td');const name=document.createElement('div');name.className='user-name';name.textContent=user.username;who.append(name);
+      const state=document.createElement('td');const badge=document.createElement('span');badge.className='badge '+user.status;badge.textContent=user.status;state.append(badge);if(user.status==='suspended'&&user.suspended_until){const expiry=document.createElement('div');expiry.className='email';expiry.textContent='Until '+fmtDateTime(user.suspended_until);state.append(expiry);}
+      const usage=document.createElement('td');usage.textContent=`${fmt(user.used_bytes)} / ${fmt(user.storage_limit_bytes)}`;const bar=document.createElement('div');bar.className='storage-bar';const fill=document.createElement('span');fill.style.width=Math.min(100,user.used_bytes/user.storage_limit_bytes*100)+'%';bar.append(fill);usage.append(bar);
+      const quotaCell=document.createElement('td');const quota=document.createElement('input');quota.className='quota-input';quota.type='number';quota.min='1';quota.max='100000';quota.step='1';quota.value=(user.storage_limit_bytes/1_000_000).toFixed(0);quotaCell.append(quota,document.createTextNode(' MB '),button('Save','',async()=>{try{await api(`/api/admin/users/${user.id}/quota`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({limit_mb:quota.value})});$('accountMessage').textContent='Storage quota updated.';await refresh();}catch(e){$('accountMessage').textContent=e.message;}}));
+      const created=document.createElement('td');created.textContent=fmtDateTime(user.created_at);
+      const actions=document.createElement('td');const controls=document.createElement('div');controls.className='account-controls';controls.append(button('Browse folders','',()=>showFolders(user)),button('Recovery code','',()=>issueRecovery(user)));
+      const status=document.createElement('select');status.className='status-select';for(const value of ['active','suspended','deactivated']){const option=document.createElement('option');option.value=value;option.textContent=value[0].toUpperCase()+value.slice(1);status.append(option);}status.value=user.status;
+      const duration=document.createElement('label');duration.className='suspension-duration';duration.append(document.createTextNode('Duration'));const days=document.createElement('input');days.className='suspension-days';days.type='number';days.min='1';days.max='3650';days.value='1';days.setAttribute('aria-label','Suspension duration in days');duration.append(days,document.createTextNode('days'));const syncDuration=()=>duration.classList.toggle('hidden',status.value!=='suspended');status.onchange=syncDuration;syncDuration();
+      const applyStatus=button('Apply','',async()=>{try{const payload={status:status.value};if(status.value==='suspended')payload.suspension_days=days.value;await api(`/api/admin/users/${user.id}/status`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});$('accountMessage').textContent=status.value==='deactivated'?'Account deactivated.':'Account status updated.';await refresh();}catch(e){$('accountMessage').textContent=e.message;}});status.onchange=()=>{syncDuration();applyStatus.textContent=status.value==='active'&&user.status!=='active'?'Activate':'Apply';};
+      const tools=document.createElement('div');tools.className='account-tools';tools.append(controls.children[0],controls.children[1],button('Delete','danger',()=>deleteUser(user)));const statusControls=document.createElement('div');statusControls.className='account-status-controls';const statusField=document.createElement('label');statusField.className='status-field';statusField.append(document.createTextNode('Account status'),status);statusControls.append(statusField,duration,applyStatus);controls.replaceChildren(tools,statusControls);actions.append(controls);
+      row.append(uid,who,state,usage,quotaCell,created,actions);root.append(row);
+    } if(!users.length){const row=document.createElement('tr');const cell=document.createElement('td');cell.colSpan=7;cell.className='muted';cell.textContent=data.users.length?'No accounts match these filters.':'No user accounts found.';row.append(cell);root.append(row);} }catch(error){$('accountMessage').textContent=error.message;} }
+  function renderEvents(root,events){root.replaceChildren();for(const event of events){const row=document.createElement('div');row.className='event';const details=[event.target_name,event.detail].filter(Boolean).join(' · ')||'—';for(const [index,value] of [event.created_at,event.event,event.actor_name||'System',details,event.ip_address||'—'].entries()){const cell=document.createElement('div');cell.textContent=index===0?fmtDateTime(value):value;row.append(cell);}root.append(row);}if(!events.length){const empty=document.createElement('div');empty.className='muted small';empty.textContent='No activity recorded yet.';root.append(empty);}}
+  async function loadActivity(){try{const data=await(await api('/api/admin/logs')).json();const root=$('activityRows');root.replaceChildren();const heading=document.createElement('div');heading.className='event event-head';for(const label of ['Time','Event','Actor','Details','Address']){const e=document.createElement('div');e.textContent=label;heading.append(e);}root.append(heading);renderEventsWithHeader(root,data.events);const security=$('securityRows');security.replaceChildren();$('securityBox').classList.toggle('hidden',!data.security_events.length);for(const item of data.security_events){const row=document.createElement('div');row.className='security-row';const left=document.createElement('span');left.textContent=`${item.username||'(unknown username)'} · ${item.ip_address||'unknown address'}`;const right=document.createElement('strong');right.textContent=`${item.failures} attempts`;row.append(left,right);security.append(row);}}catch(error){$('activityRows').textContent=error.message;}}
+  function renderEventsWithHeader(root,events){const header=root.firstChild;renderEvents(root,events);root.prepend(header);}
+  async function loadActivity(){try{const data=await(await api('/api/admin/logs')).json();activityEvents=data.events;const pageCount=Math.max(1,Math.ceil(activityEvents.length/10));activityPage=Math.min(activityPage,pageCount);const root=$('activityRows');const heading=document.createElement('div');heading.className='event event-head';for(const label of ['Time','Event','Actor','Details','Address']){const cell=document.createElement('div');cell.textContent=label;heading.append(cell);}renderEvents(root,activityEvents.slice((activityPage-1)*10,activityPage*10));root.prepend(heading);$('activityPageInfo').textContent=activityEvents.length?`Showing ${(activityPage-1)*10+1}-${Math.min(activityPage*10,activityEvents.length)} of ${activityEvents.length} logs`:'Showing 0 logs';$('activityPrevious').disabled=activityPage<=1;$('activityNext').disabled=activityPage>=pageCount;const security=$('securityRows');security.replaceChildren();$('securityBox').classList.toggle('hidden',!data.security_events.length);for(const item of data.security_events){const row=document.createElement('div');row.className='security-row';const left=document.createElement('span');left.textContent=`${item.username||'(unknown username)'} · ${item.ip_address||'unknown address'}`;const right=document.createElement('strong');right.textContent=`${item.failures} attempts`;row.append(left,right);security.append(row);}}catch(error){$('activityRows').textContent=error.message;}}
+  function activityCategory(eventName) { if (/^(login_|recovery_failed)/.test(eventName)) return 'security'; if (/^(account_|password_|storage_quota_changed|recovery_code_issued)/.test(eventName)) return 'accounts'; if (/^(file_|folder_)/.test(eventName)) return 'files'; return 'system'; }
+  function filteredActivityEvents() { const category=$('activityCategoryFilter').value;const query=$('searchActivity').value.trim().toLowerCase();return activityEvents.filter(event=>(category==='all'||activityCategory(event.event)===category)&&(!query||[event.event,event.actor_name,event.target_name,event.detail,event.ip_address,event.created_at].some(value=>String(value||'').toLowerCase().includes(query)))); }
+  function renderActivityPage() { const events=filteredActivityEvents();const pageCount=Math.max(1,Math.ceil(events.length/10));activityPage=Math.min(activityPage,pageCount);const root=$('activityRows');const heading=document.createElement('div');heading.className='event event-head';for(const label of ['Time','Event','Actor','Details','Address']){const cell=document.createElement('div');cell.textContent=label;heading.append(cell);}renderEvents(root,events.slice((activityPage-1)*10,activityPage*10));root.prepend(heading);$('activityPageInfo').textContent=events.length?'Showing '+((activityPage-1)*10+1)+'-'+Math.min(activityPage*10,events.length)+' of '+events.length+' matching logs':'No matching activity';$('activityPrevious').disabled=activityPage<=1;$('activityNext').disabled=activityPage>=pageCount;}
+  function renderSecurityEvents() { const root=$('securityRows');root.replaceChildren();const query=$('searchActivity').value.trim().toLowerCase();const matches=securityEvents.filter(item=>!query||[item.username,item.ip_address].some(value=>String(value||'').toLowerCase().includes(query)));const category=$('activityCategoryFilter').value;$('securityBox').classList.toggle('hidden',(category!=='all'&&category!=='security')||!matches.length);for(const item of matches){const row=document.createElement('div');row.className='security-row';const left=document.createElement('span');left.textContent=(item.username||'(unknown username)')+' · '+(item.ip_address||'unknown address');const right=document.createElement('strong');right.textContent=item.failures+' attempts';row.append(left,right);root.append(row);}}
+  async function loadActivity(){try{const data=await(await api('/api/admin/logs')).json();activityEvents=data.events;securityEvents=data.security_events;renderActivityPage();renderSecurityEvents();}catch(error){$('activityRows').textContent=error.message;}}
+  function applyActivityFilters(){activityPage=1;renderActivityPage();renderSecurityEvents();}
+  $('activityCategoryFilter').onchange=applyActivityFilters;
+  $('searchActivity').oninput=applyActivityFilters;
+  $('activityPrevious').onclick=()=>{if(activityPage>1){activityPage--;renderActivityPage();}};
+  $('activityNext').onclick=()=>{if(activityPage<Math.ceil(filteredActivityEvents().length/10)){activityPage++;renderActivityPage();}};
+  async function showFolders(user){try{const data=await(await api(`/api/admin/users/${user.id}/folders`)).json();$('foldersTitle').textContent=`${data.username} · folder contents`;const root=$('folderTree');root.replaceChildren();const map=new Map(data.folders.map(folder=>[folder.id,{...folder,children:[],files:[]} ]));let rootFolder;for(const folder of map.values()){if(folder.parent_id===null)rootFolder=folder;else map.get(folder.parent_id)?.children.push(folder);}for(const file of data.files)map.get(file.folder_id)?.files.push(file);function draw(folder,parent){const box=document.createElement('div');box.className='tree-folder';const title=document.createElement('div');title.className='tree-title';title.textContent=folder.parent_id===null?'My files':folder.name;box.append(title);for(const file of folder.files){const f=document.createElement('div');f.className='tree-file';f.textContent=`${file.name} · ${fmt(file.storage_bytes)}`;box.append(f);}for(const child of folder.children)draw(child,box);parent.append(box);}if(rootFolder)draw(rootFolder,root);$('foldersDialog').showModal();}catch(error){$('accountMessage').textContent=error.message;}}
+  async function issueRecovery(user){try{const data=await(await api(`/api/admin/users/${user.id}/recovery`,{method:'POST'})).json();$('recoveryCode').textContent=data.recovery_code;$('recoveryDialog').showModal();}catch(error){$('accountMessage').textContent=error.message;}}
+  async function showFolders(user){try{const data=await(await api('/api/admin/users/'+user.id+'/folders')).json();$('foldersTitle').textContent=data.username+' · folders';const root=$('folderTree');const path=$('folderBreadcrumbs');const map=new Map(data.folders.map(folder=>[folder.id,{...folder,children:[],files:[]}]));let rootFolder=null;for(const folder of map.values()){if(folder.parent_id===null)rootFolder=folder;else map.get(folder.parent_id)?.children.push(folder);}for(const file of data.files){const folder=map.get(file.folder_id);if(folder)folder.files.push(file);}let currentFolder=rootFolder;
+    function render(){root.replaceChildren();path.replaceChildren();if(!currentFolder){const empty=document.createElement('div');empty.className='folder-empty';empty.textContent='This account has no folders yet.';root.append(empty);$('folderBack').classList.add('hidden');return;}
+      const ancestors=[];let cursor=currentFolder;while(cursor){ancestors.unshift(cursor);cursor=cursor.parent_id===null?null:map.get(cursor.parent_id);}const crumbs=[rootFolder,...ancestors.slice(1)];crumbs.forEach((folder,index)=>{if(index){const sep=document.createElement('span');sep.className='folder-crumb-sep';sep.textContent='›';path.append(sep);}const crumb=document.createElement('button');crumb.type='button';crumb.className='folder-crumb'+(index===crumbs.length-1?' current':'');crumb.textContent=index===0?'My files':folder.name;crumb.onclick=()=>{currentFolder=folder;render();};path.append(crumb);});
+      $('folderBack').classList.toggle('hidden',currentFolder.id===rootFolder.id);$('folderBack').onclick=()=>{if(currentFolder.parent_id!==null){currentFolder=map.get(currentFolder.parent_id);render();}};
+      for(const child of currentFolder.children){const entry=document.createElement('button');entry.type='button';entry.className='folder-entry';entry.setAttribute('aria-label','Open folder '+child.name);const icon=document.createElement('span');icon.className='folder-entry-icon';icon.setAttribute('aria-hidden','true');icon.textContent='▰';const copy=document.createElement('span');copy.className='folder-entry-copy';const name=document.createElement('span');name.className='folder-entry-name';name.textContent=child.name;const meta=document.createElement('span');meta.className='folder-entry-meta';meta.textContent=child.children.length+' folders · '+child.files.length+' files';copy.append(name,meta);entry.append(icon,copy);entry.onclick=()=>{currentFolder=child;render();};root.append(entry);}
+      for(const file of currentFolder.files){const row=document.createElement('div');row.className='folder-file';const name=document.createElement('span');name.textContent=file.name;const size=document.createElement('span');size.className='folder-file-meta';size.textContent=fmt(file.storage_bytes);row.append(name,size);root.append(row);}
+      if(!currentFolder.children.length&&!currentFolder.files.length){const empty=document.createElement('div');empty.className='folder-empty';empty.textContent='This folder is empty.';root.append(empty);}
+    }
+    render();$('foldersDialog').showModal();}catch(error){$('accountMessage').textContent=error.message;}}
+  $('copyRecovery').onclick=async()=>{await navigator.clipboard.writeText($('recoveryCode').textContent);$('copyRecovery').textContent='Copied';setTimeout(()=>$('copyRecovery').textContent='Copy code',1200);};
+  async function deleteUser(user){if(!await confirmAction('Delete user account?',`Permanently remove ${user.username}, their account folder, and all stored files. This cannot be undone.`,'Delete account'))return;try{const result=await(await api(`/api/admin/users/${user.id}`,{method:'DELETE'})).json();$('accountMessage').textContent=result.warning||`${user.username} was deleted.`;await refresh();}catch(error){$('accountMessage').textContent=error.message;}}
+  async function refresh(){await Promise.all([loadSummary(),loadUsers()]);}
+  $('refreshActivity').onclick=loadActivity;
+  $('restoreButton').onclick=async()=>{const file=$('backupFile').files[0];if(!file){$('backupMessage').textContent='Choose a backup archive first.';return;}if(!await confirmAction('Restore system backup?','This replaces the current account database and all stored files. The current system will be removed.','Restore system'))return;const body=new FormData();body.append('backup',file);$('backupMessage').textContent='Restoring backup…';try{const data=await(await api('/api/admin/restore',{method:'POST',body})).json();$('backupMessage').textContent=data.message||'Restore complete.';window.location.assign('/');}catch(error){$('backupMessage').textContent=error.message;}};
+  $('logout').onclick=async()=>{if(!await confirmAction('Log out?','Are you sure you want to log out?','Log out'))return;try{await api('/api/logout',{method:'POST'});}finally{window.location.assign('/');}};
+  refresh();
+</script>
+</body>
+</html>
